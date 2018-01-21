@@ -5,7 +5,9 @@ import (
 	"regexp"
 )
 
+//Options models the different conversion settings and ways of selecting them.
 type Options struct {
+	Profile        string
 	SourceFile     string
 	OutFile        string
 	Subtitles      bool
@@ -22,19 +24,21 @@ type Options struct {
 	AudioFormat    string
 }
 
-var audioFlags map[string]string = map[string]string{
+var validProfiles = []string{"tv", "ps4"}
+var validVideoFormats = []string{"x264", "x265"}
+var validAudioFormats = []string{"aac", "eac3", "dts"}
+var ffmpegMappings = map[string]string{
+	"x264": "libx264 -profile:v high -level 4.2 -preset slow -crf 12 -pix_fmt yuv420p -movflags faststart",
+	"x265": "libx265 -pix_fmt yuv420p10le -preset fast -x265-params level=5.2:vbv-bufsize=60000:vbv-maxrate=60000:crf=20",
 	"aac":  "aac -b:a 512k -ac 2 -clev 1.414 -slev .5 -strict -2",
 	"eac3": "eac3 -ab 1536k -strict -2",
 	"dts":  "dca -ab 1536k -strict -2",
 }
 
-var videoFlags map[string]string = map[string]string{
-	"x264": "libx264 -profile:v high -level 4.2 -preset slow -crf 12 -pix_fmt yuv420p -movflags faststart",
-	"x265": "libx265 -pix_fmt yuv420p10le -preset fast -x265-params level=5.2:vbv-bufsize=60000:vbv-maxrate=60000:crf=20",
-}
-
+//NewOptions - constructor for an Options object with default settings.
 func NewOptions() Options {
 	return Options{
+		Profile:        "",
 		SourceFile:     "",
 		OutFile:        "",
 		Subtitles:      true,
@@ -51,6 +55,33 @@ func NewOptions() Options {
 	}
 }
 
+func valueInList(value string, validList []string) bool {
+	for _, s := range validList {
+		if value == s {
+			return true
+		}
+	}
+	return false
+}
+
+//ValidateOptions - called to check that the options are sane.
+func ValidateOptions(args []string, flags Options) error {
+	fmt.Printf("Validating options\n")
+	fmt.Printf("Options: %+v\n", flags)
+
+	if flags.Profile != "" && !valueInList(flags.Profile, validProfiles) {
+		return fmt.Errorf("invalid profile specified: %s", flags.Profile)
+	}
+	if flags.VideoFormat != "" && !valueInList(flags.VideoFormat, validVideoFormats) {
+		return fmt.Errorf("invalid video format specified: %s", flags.VideoFormat)
+	}
+	if flags.AudioFormat != "" && !valueInList(flags.AudioFormat, validAudioFormats) {
+		return fmt.Errorf("invalid audio format specified: %s", flags.AudioFormat)
+	}
+	return nil
+}
+
+//Execute - do to the requested conversion.
 func Execute(args []string, flags Options) {
 	fmt.Printf("Running convert command from within convert package...\n")
 	fmt.Printf("Options: %+v\n", flags)
@@ -62,7 +93,8 @@ func Execute(args []string, flags Options) {
 		fmt.Printf("OutFile set to %s\n", flags.OutFile)
 	}
 
-	switch flags.Profile {
+	if flags.Profile != "" {
+		switch flags.Profile {
 		case "ps4":
 			flags.VideoFormat = "x265"
 			flags.AudioFormat = "aac"
@@ -70,7 +102,5 @@ func Execute(args []string, flags Options) {
 			flags.VideoFormat = "x265"
 			flags.AudioFormat = "eac3"
 		}
-
-}
-
+	}
 }

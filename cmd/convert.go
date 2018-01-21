@@ -27,6 +27,9 @@ var convertCmd = &cobra.Command{
 	Short: "convert a movie file",
 	Long: `convert a movie file using sane defaults based on the
 specific requirements of converting files for home use.`,
+	PreRunE: func(cmd *cobra.Command, args []string) error {
+		return convert.ValidateOptions(args, options)
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		convert.Execute(args, options)
 	},
@@ -50,6 +53,7 @@ func init() {
 	convertCmd.Flags().StringVarP(&options.SourceFile, "from", "f", "", "the path to the source file to convert from")
 	convertCmd.MarkFlagRequired("from")
 	convertCmd.Flags().StringVarP(&options.OutFile, "out", "o", "", "the path of the resultant movie (default computed from source file name)")
+	convertCmd.Flags().StringVarP(&options.Profile, "profile", "", "", "specify a profile of either tv or ps4 to inherit common parameters")
 	convertCmd.Flags().StringVarP(&options.VideoFlags, "videoflags", "", "", "specify/override the ffmpeg video flags")
 	convertCmd.Flags().StringVarP(&options.AudioFlags, "audioflags", "", "", "specify/override the ffmpeg audio flags")
 	convertCmd.Flags().StringVarP(&options.AudioFormat, "audio", "", "eac3", "Choose audio format from eac3, aac or dts")

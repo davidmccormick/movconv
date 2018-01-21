@@ -35,7 +35,7 @@ For example: movconv convert -f downloaded_movie.mkv -tv|-playstation
 movconv uses ffmpeg to do the transcoding and re-coding.
 `,
 	Version: "0.1",
-	Args: cobra.NoArgs,
+	Args:    cobra.NoArgs,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
