@@ -2,7 +2,10 @@ package convert
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"regexp"
+	"strings"
 )
 
 //Options models the different conversion settings and ways of selecting them.
@@ -82,9 +85,13 @@ func ValidateOptions(args []string, flags Options) error {
 }
 
 //Execute - do to the requested conversion.
-func Execute(args []string, flags Options) {
+func Execute(args []string, flags Options) error {
 	fmt.Printf("Running convert command from within convert package...\n")
 	fmt.Printf("Options: %+v\n", flags)
+
+	if _, err := os.Stat(flags.SourceFile); os.IsNotExist(err) {
+		return err
+	}
 
 	if flags.OutFile == "" {
 		// setoutfile to input with extra .converted before final file type.
@@ -103,4 +110,36 @@ func Execute(args []string, flags Options) {
 			flags.AudioFormat = "eac3"
 		}
 	}
+
+	codecs, err := findCodecs(flags.SourceFile)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Found these codecs in the source: %v\n", codecs)
+	return nil
+}
+
+// return the codecs found in a movie file by name
+func findCodecs(filepath string) ([]string, error) {
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		return []string{}, fmt.Errorf("File %s does not exist", filepath)
+	}
+
+	c1 := exec.Command("ffprobe", "'filepath'", "-show_entries", "stream=codec_name")
+	c2 := exec.Command("grep", "codec_name")
+	c3 := exec.Command("cut", "-d=", "-f2")
+
+	//set up the pipeline
+	c2.Stdin, _ = c1.StdoutPipe()
+	c3.Stdin, _ = c2.StdoutPipe()
+
+	_ = c2.Start()
+	_ = c3.Start()
+	_ = c1.Run()
+	_ = c2.Wait()
+	_ = c3.Wait()
+
+	out, _ := c3.Output()
+	return strings.Fields(string(out)), nil
 }

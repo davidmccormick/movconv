@@ -15,7 +15,7 @@
 package cmd
 
 import (
-	//	"fmt"
+	"fmt"
 	convert "movconv/pkg/convert"
 
 	"github.com/spf13/cobra"
@@ -31,7 +31,11 @@ specific requirements of converting files for home use.`,
 		return convert.ValidateOptions(args, options)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		convert.Execute(args, options)
+		if err := convert.Execute(args, options); err != nil {
+			fmt.Printf("Conversion failed with error: %s\n", err.Error())
+		} else {
+			fmt.Printf("Conversion succeeded!\n")
+		}
 	},
 }
 
